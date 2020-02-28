@@ -86,12 +86,25 @@ class Eloverblik:
         if 'result' in result and len(result['result']) > 0:
             market_document = result['result'][0]['MyEnergyData_MarketDocument']
             if 'TimeSeries' in market_document and len(market_document['TimeSeries']) > 0:
-                time_series = market_document['TimeSeries'][0]
-
-                if 'Period' in time_series and len(time_series['Period']) > 0:
-                    point = time_series['Period'][0]['Point']
-                    for i in point:
-                        metering_data.append(float(i['out_Quantity.quantity']))
+                time_series = market_document['TimeSeries']
+                for t in time_series:
+                    Period = t['Period']
+                    for p in Period:
+                        periodestart = p['timeInterval']['start']
+                        resolution = p['resolution']
+                        date_time_obj = datetime.strptime(periodestart, '%Y-%m-%dT%H:%M:%SZ')
+                        point = p['Point'] #time_series['Period'][0]
+                        for i in point:
+                            datoTid = date_time_obj + timedelta(hours=int(i['position'])+1)
+                            metering_data.append(
+                                "{measurement},meterID={meterID},resolution={resolution},position={position},quality={quality} værdi={value} {time}"
+                                .format(measurement=measurement_name,
+                                        meterID=meter,
+                                        resolution=resolution,
+                                        position=i['position'],
+                                        quality=i['out_Quantity.quality'],
+                                        value=float(i['out_Quantity.quantity']),
+                                        time=datoTid))
 
                     result = TimeSeries(200, date, metering_data)
 
